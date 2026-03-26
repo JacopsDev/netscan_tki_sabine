@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/netscan_sabine_module" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
