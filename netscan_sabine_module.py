@@ -211,7 +211,7 @@ class netscan_sabine:
 
         self.add_to_jacops_toolbar(
             icon_path=icon_path,
-            text=self.tr(u'Measure with Sabine :)'),
+            text=self.tr(u'Measure wyre-tki-synergie with Sabine :)'),
             callback=self.run,
             enabled=True,
             object_name=ACTION_OBJECT_NAME)

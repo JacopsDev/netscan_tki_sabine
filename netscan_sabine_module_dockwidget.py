@@ -22,7 +22,6 @@
  ***************************************************************************/
 """
 
-# python
 import os
 from typing import List, Tuple, Dict, Any, Optional
 
@@ -67,7 +66,6 @@ from qgis.gui import QgsMapTool, QgsRubberBand, QgsHighlight
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'netscan_sabine_module_dockwidget_base.ui'))
-# Custom display names for specific layers
 custom_names = {
     'net_scan_jacops:tc_rl_duct': 'Unifiber - Ducts',
     'net_scan_jacops:tc_rl_segment': 'Unifiber - Segments',
@@ -98,11 +96,6 @@ ALLOWED_LAYER_PREFIXES = (
     "Unifiber - Ducts",
 )
 STRUCTURE_TYPE_MAP = {
-    # 11202: "Grube",
-    # 11203: "AZK (Neu)",
-    # 11204: "Kabelschacht (Neu)",
-    # 11205: "AZK (Bestand)",
-    # 11206: "Kabelschacht (Bestand)",
     11209: "POC",
     11210: "EK478",
     11211: "Has-Koppeling",
@@ -126,12 +119,91 @@ STRUCTURE_TYPE_MAP = {
     4962347: "Sokkelpop",
 }
 
+DUCT_STYLE = {
+    11220: ("#1f78b4", "DB1"),
+    11221: ("#33a02c", "DB2"),
+    11222: ("#ff7f00", "DB4"),
+    11223: ("#6a3d9a", "DB7"),
+    11224: ("#b15928", "DB24"),
+    11225: ("#a6cee3", "HDPE"),
+
+    3906717: ("#fb9a99", "DB6"),
+    3906718: ("#b2df8a", "DB7-Grijs"),
+    3906719: ("#fdbf6f", "DB7-Oranje"),
+    3906720: ("#cab2d6", "PE26"),
+    3906721: ("#ffff99", "PE1"),
+}
+
+DUCT_COLORS = {
+    # DB series
+    "DB1": QColor("#1f78b4"),
+    "DB2": QColor("#33a02c"),
+    "DB4": QColor("#e31a1c"),
+    "DB6": QColor("#6a3d9a"),
+    "DB7": QColor("#ff7f00"),
+    "DB7-Grijs": QColor("gray"),
+    "DB7-Oranje": QColor("orange"),
+    "DB24": QColor("#b2df8a"),
+
+    # MF series
+    "MF12": QColor("#a6cee3"),
+    "MF24": QColor("#fb9a99"),
+
+    # Materials
+    "HDPE": QColor("#000000"),
+    "PE26": QColor("#b15928"),
+}
+
+SEGMENT_TYPE_COLORS: dict[int, QColor] = {
+    1: QColor("#1f78b4"),  # Open sleuf
+    2: QColor("#33a02c"),  # Handboring
+    3: QColor("#e31a1c"),  # Gestuurde boring
+}
+
+
+SEGMENT_TYPE_LABELS: dict[int, str] = {
+    1: "Trenching",         # formerly "Open sleuf"
+    2: "Handboring",
+    3: "Crossing",          # formerly "Gestuurde boring"
+}
+DOCK_DEFAULT_HEIGHT = 450
+
+def segment_text_icon(color: QColor) -> str:
+    """Segment bullet: always black, ignore given color."""
+    black = QColor("black")
+    return (
+        f'<span style="color:{black.name()};'
+        f'font-size:11pt;'
+        f'vertical-align:middle;'
+        f'margin-right:16px;">&#9679;</span>'
+    )
+
+
+
+def structure_text_icon(label: str, color: QColor) -> str:
+    """Structure bullet: always green, ignore given color."""
+    green = QColor("green")
+    return (
+        f'<span style="color:{green.name()};'
+        f'font-size:11pt;'
+        f'vertical-align:middle;'
+        f'margin-right:16px;">&#9679;</span>'
+    )
+
+STRUCTURE_NAME_TO_FID: dict[str, int] = {
+    name: fid for fid, name in STRUCTURE_TYPE_MAP.items()
+}
+
+def duct_icon(color: QColor) -> str:
+    """Duct bullet: per-duct color."""
+    return (
+        f'<span style="color:{color.name()};'
+        f'font-size:11pt;'
+        f'vertical-align:middle;'
+        f'margin-right:8px;">&#9679;</span>'
+    )
 STRUCTURE_COLORS = {
-    # 11202: QColor("#1f78b4"),   # Grube
-    # 11203: QColor("#33a02c"),   # AZK (Neu)
-    # 11204: QColor("#e31a1c"),   # Kabelschacht (Neu)
-    # 11205: QColor("#6a3d9a"),   # AZK (Bestand)
-    # 11206: QColor("#ff7f00"),   # Kabelschacht (Bestand)
+
     11209: QColor("#b15928"),   # POC
     11210: QColor("#a6cee3"),   # EK478
     11211: QColor("#fb9a99"),   # Has-Koppeling
@@ -208,34 +280,7 @@ DUCT_COLORS = {
     "PE26": QColor("#b15928"),     # brown
 }
 
-STRUCTURE_COLORS = {
-    # 11202: QColor("#e6194b"),  # Grube
-    # 11203: QColor("#3cb44b"),  # AZK (Neu)
-    # 11204: QColor("#ffe119"),  # Kabelschacht (Neu)
-    # 11205: QColor("#0082c8"),  # AZK (Bestand)
-    # 11206: QColor("#f58231"),  # Kabelschacht (Bestand)
-    11209: QColor("#911eb4"),  # POC
-    11210: QColor("#46f0f0"),  # EK478
-    11211: QColor("#f032e6"),  # Has-Koppeling
-    11212: QColor("#d2f53c"),  # Koppeling
-    11213: QColor("#fabebe"),  # MF endbox
-    11214: QColor("#008080"),  # Riser
-    11215: QColor("#e6beff"),  # Toby-Box (type HIB)
-    11216: QColor("#aa6e28"),  # Other
-    3906712: QColor("#fffac8"), # EK578
-    3906715: QColor("#800000"), # Modulaire Betonbak
-    3906716: QColor("#aaffc3"), # Kunstof-lasput (type LOT)
-    3906722: QColor("#808000"), # Handhole (POC)
-    3906723: QColor("#ffd8b1"), # Medium Bak (DP)
-    3906724: QColor("#000075"), # Standard Bak (PDP)
-    4962341: QColor("#808080"), # STOP
-    4962342: QColor("#ffffff"), # Koppelbak
-    4962343: QColor("#000000"), # PDP Beton
-    4962344: QColor("#bcf60c"), # Sokkel POP
-    4962345: QColor("#ffaeb9"), # PDP Kunststof
-    4962346: QColor("#baffc9"), # POC versterkt
-    4962347: QColor("#xfffacd"), # Sokkelpop
-}
+
 
 SYNERGIE_VALUES = [
     'SYNERGIE WYRE',
@@ -247,13 +292,7 @@ SYNERGIE_VALUES = [
 ]
 
 
-# Suppose your combo box is self.mComboBox
-# icons = {
-#     "FIBERKLAAR": ":fiberklaarlogo.png",
-#     "UNIFIBER": ":/icons/unifiber.png",
-#     "WYRE": ":/icons/wyre.png",
-#     "PROXIMUS": ":/icons/proximus.png",
-# }
+
 def extract_wfs_typename(layer: QgsVectorLayer) -> Optional[str]:
     try:
         src = layer.source()
@@ -264,8 +303,6 @@ def extract_wfs_typename(layer: QgsVectorLayer) -> Optional[str]:
         pass
     return None
 
-
-# python
 def style_wfs_layer(layer: QgsVectorLayer):
     if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
         return
@@ -292,13 +329,9 @@ def style_wfs_layer(layer: QgsVectorLayer):
             )
 
             sym.changeSymbolLayer(0, line_layer)
-
-            # Correct order: (value, symbol, label)
             categories.append(
                 QgsRendererCategory(synergy, sym, f"Synergy ({synergy})")
             )
-
-        # Non-synergy segments
         sym_gray = QgsSymbol.defaultSymbol(geom_type)
 
         gray_layer = QgsSimpleLineSymbolLayer()
@@ -327,7 +360,6 @@ def style_wfs_layer(layer: QgsVectorLayer):
         layer.setRenderer(renderer)
         layer.triggerRepaint()
 
-    # DUCT styling (categorized by Feature + c_synergie)
     elif "DUCT" in layer_name:
         name_field = "name"
         categories = []
@@ -349,12 +381,10 @@ def style_wfs_layer(layer: QgsVectorLayer):
             elif geom_type == QgsWkbTypes.PointGeometry:
                 sym.setSize(2.0)
 
-            # Correct order: (value, symbol, label)
             categories.append(
                 QgsRendererCategory(name, sym, str(name))
             )
 
-        # NULL / unknown ducts
         sym_gray = QgsSymbol.defaultSymbol(geom_type)
         sym_gray.setColor(QColor("gray"))
         categories.append(
@@ -365,7 +395,6 @@ def style_wfs_layer(layer: QgsVectorLayer):
         layer.setRenderer(renderer)
         layer.triggerRepaint()
 
-    # STRUCTURE styling (single green symbol)
     elif "STRUCTURE" in layer_name:
         fid_type_field = "fid_type"
         categories = []
@@ -377,10 +406,8 @@ def style_wfs_layer(layer: QgsVectorLayer):
                 sym.setWidth(1.0)
             elif geom_type == QgsWkbTypes.PointGeometry:
                 sym.setSize(2.0)
-            # Correct order: (value, symbol, label)
             categories.append(QgsRendererCategory(fid, sym, STRUCTURE_TYPE_MAP.get(fid, str(fid))))
 
-        # Unknown types
         sym_gray = QgsSymbol.defaultSymbol(geom_type)
         sym_gray.setColor(QColor("gray"))
         categories.append(QgsRendererCategory(None, sym_gray, "Unknown"))
@@ -390,11 +417,9 @@ def style_wfs_layer(layer: QgsVectorLayer):
         layer.triggerRepaint()
 
 def _layer_display_name(layer) -> Optional[str]:
-    """Return a usable display name for a QGIS layer (calls .name() if callable)."""
     try:
         if layer is None:
             return None
-        # prefer the callable .name()
         name_attr = getattr(layer, "name", None)
         if callable(name_attr):
             try:
@@ -451,12 +476,10 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def __init__(self, parent=None, canvas=None):
 
         super().__init__(parent)
-
-        # Explicit canvas must be passed
         if canvas is None:
             raise ValueError("You must pass a valid QgsMapCanvas to the dock widget")
         self.canvas = canvas
-        self.dock = self  # <-- ADD THIS LINE
+        self.dock = self
 
         self.prev_map_tool = None
         self.polygon_tool = None
@@ -464,12 +487,15 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.prev_map_tool = None
         self.polygon_tool = None
-        # Set up the user interface from Designer.
-        # After setupUI you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-connect
+
         self.setupUi(self)
+        try:
+            self.setMinimumHeight(DOCK_DEFAULT_HEIGHT)
+            self.resize(self.width(), DOCK_DEFAULT_HEIGHT)
+            self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        except Exception:
+            pass
+
         self.txtUnifiber = self.findChild(QtWidgets.QTextBrowser, "txtUnifiber")
         if self.txtUnifiber is None:
             print(">>> ERROR: txtUnifiber not found in UI")
@@ -490,6 +516,7 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         plugin_dir = os.path.dirname(__file__)
         fiberklaar_logo = os.path.join(plugin_dir, "fiberklaarlogo.png")
         # --- Providers and icons ---
+
 
 
         providers = [
@@ -521,7 +548,6 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         layers_icon_path = os.path.join(plugin_dir, "layers.png")
 
         if hasattr(self, "btn_lagen_inladen"):
-            # Set icon (fallback to a standard icon if file missing or fails)
             if os.path.exists(layers_icon_path):
                 try:
                     self.btn_lagen_inladen.setIcon(QIcon(layers_icon_path))
@@ -530,18 +556,15 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             else:
                 self.btn_lagen_inladen.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DialogOpenButton))
 
-            # Optional: tooltip and accessible name
             self.btn_lagen_inladen.setToolTip("Load layers")
             self.btn_lagen_inladen.setAccessibleName("btn_load_layers")
 
-            # Connect handler
             self.btn_lagen_inladen.clicked.connect(self.load_selected_layers)
-        # python
+
         plugin_dir = os.path.dirname(__file__)
         pencil_icon_path = os.path.join(plugin_dir, "pencil.png")
 
         if hasattr(self, "btn_select"):
-            # Set icon (fallback to a standard icon if file missing or fails)
             if os.path.exists(pencil_icon_path):
                 try:
                     self.btn_select.setIcon(QIcon(pencil_icon_path))
@@ -550,12 +573,24 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             else:
                 self.btn_select.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DialogOpenButton))
 
-            # Optional: tooltip and accessible name
             self.btn_select.setToolTip("Select polygon")
             self.btn_select.setAccessibleName("btn_select_polygon")
 
-            # Connect handler
             self.btn_select.clicked.connect(self.activate_polygon_selection)
+
+        if not hasattr(self, "check_synergie") or self.check_synergie is None:
+            self.check_synergie = QtWidgets.QCheckBox("Only Synergie", self)
+            self.check_synergie.setObjectName("check_synergie")
+            self.check_synergie.setToolTip("When checked, only SYNERGIE segments are considered")
+            self.check_synergie.setChecked(False)
+
+            try:
+                self.gridLayout.addWidget(self.check_synergie, 0, 1)
+            except Exception:
+                try:
+                    self.gridLayout.addWidget(self.check_synergie)
+                except Exception:
+                    pass
 
         plugin_dir = os.path.dirname(__file__)
         searching_icon_path = os.path.join(plugin_dir, "info.png")
@@ -565,10 +600,7 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         else:
             self.btn_info.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxInformation))
 
-        # Tooltip (optional)
         self.btn_info.setToolTip("Info")
-
-        # Connect
         self.btn_info.clicked.connect(self.show_info_message)
 
     def add_layer_wms(self):
@@ -586,7 +618,6 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             QgsMessageLog.logMessage("Failed to create OSM layer (invalid).", "netscan_sabine", Qgis.Warning)
             return
 
-        # register the layer without adding it to the layer tree
         QgsProject.instance().addMapLayer(slayer, False)
 
         root = QgsProject.instance().layerTreeRoot()
@@ -602,8 +633,6 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
 
     def show_info_message(self):
-        """Show plugin info message box with searching.png as icon."""
-
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle("Netscan Sabine - Info")
 
@@ -620,6 +649,15 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         msg.exec()
 
     def activate_polygon_selection(self):
+
+        try:
+            txt = getattr(self, "txtUnifiber", None)
+            if txt is not None:
+                txt.clear()
+                txt.append("Draw a polygon to analyze data and see results...")
+        except Exception:
+            pass
+
         if getattr(self, "polygon_tool", None):
             try:
                 self.polygon_tool.clear_highlights()
@@ -669,8 +707,10 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             "netscan_sabine",
             level=Qgis.Info
         )
+        only_synergie = bool(getattr(self, "check_synergie", None) and self.check_synergie.isChecked())
+        QgsMessageLog.logMessage(f"activate_polygon_selection: only_synergie={only_synergie}", "netscan_sabine",
+                                 Qgis.Info)
 
-        # Create and activate PolygonSelectTool, pass the dock's text widget reference so the tool doesn't try to find or reparent UI
         try:
             self.polygon_tool = PolygonSelectTool(
                 canvas=self.canvas,
@@ -679,10 +719,11 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 structure_layer_id=struct_layer.id() if struct_layer else None,
                 on_found=self.on_polygon_found,
                 txt_unifiber=self.txtUnifiber,
-                btn_select=self.btn_select  # <-- pass button here
+                btn_select=self.btn_select,
+                only_synergie = getattr(self, "check_synergie", None) and self.check_synergie.isChecked()
+
             )
 
-            # preserve previous tool and set new map tool
             try:
                 self.prev_map_tool = self.canvas.mapTool()
                 self.polygon_tool.prev_map_tool = self.prev_map_tool
@@ -690,7 +731,7 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             except Exception:
                 QgsMessageLog.logMessage("Failed to set polygon map tool", "netscan_sabine", level=Qgis.Warning)
 
-            # preserve previous tool and set new map tool
+            # preserve previous tool and set new map tool -> conflict resolution: do this after creating the tool to avoid losing previous tool if creation fails
             try:
                 self.prev_map_tool = self.canvas.mapTool()
                 self.polygon_tool.prev_map_tool = self.prev_map_tool
@@ -698,7 +739,6 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.prev_map_tool = None
             try:
                 self.canvas.setMapTool(self.polygon_tool)
-                # Change button color to indicate selection active
                 self.btn_select.setStyleSheet("background-color: lightgreen;")  # or any color you like
 
             except Exception:
@@ -718,7 +758,20 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         except Exception:
             event.accept()
 
-    # python
+    def _feature_key(self, feature, fid_field='fid'):
+        """Return a stable string key for a feature: prefer fid_field if present else feature.id()."""
+        try:
+            if fid_field in feature.fields().names():
+                val = feature[fid_field]
+                if val is not None and val != '':
+                    return str(val)
+        except Exception:
+            pass
+        try:
+            return str(feature.id())
+        except Exception:
+            return ''
+
     def classify_layer(self, layer: QgsVectorLayer) -> Tuple[Optional[str], Optional[str]]:
         """
         Return (provider, layer_type) based on layer name or WFS typename.
@@ -771,10 +824,11 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return provider, layer_type
 
 
+
     def on_polygon_found(self, summary):
+
         text_widget = getattr(self, "txtUnifiber", None)
         if text_widget is None:
-            print(">>> ERROR: txtUnifiber not initialized!")
             return
 
         text_widget.clear()
@@ -782,45 +836,151 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if not summary:
             text_widget.append("<i>No features found in polygon.</i>")
             return
+        only_synergie = bool(
+            getattr(self, "check_synergie", None)
+            and self.check_synergie.isChecked()
+        )
 
-        # Group summary by provider
-        provider_dict = {}
+        provider_dict: dict[str, dict[str, dict[str, dict]]] = {}
         for key, info in summary.items():
             provider = info.get("provider", "UNKNOWN")
             layer_type = info.get("layer_type", "UNKNOWN")
-            details = info.get("details", {})
-            provider_dict.setdefault(provider, {})[layer_type] = details
+            details = info.get("details", {}) or {}
+            lengths = info.get("lengths", {}) or {}
 
+            if provider not in provider_dict:
+                provider_dict[provider] = {}
+            provider_dict[provider][layer_type] = {
+                "details": details,
+                "lengths": lengths,
+            }
+
+        # --- Render per provider ---
         for provider, layers in provider_dict.items():
-            # Provider header
-            text_widget.append(f'<b style="font-size:12pt; color:#2A52BE;">{provider}</b>')
+            text_widget.append(
+                f'<b style="font-size:12pt; color:#2A52BE;">{provider}</b>'
+            )
 
-            for layer_type in ["SEGMENT", "DUCT", "STRUCTURE", "SCAN", "None"]:
+            for layer_type in ["SEGMENT", "DUCT", "STRUCTURE", "SCAN", "UNKNOWN", "None"]:
                 if layer_type not in layers:
                     continue
 
-                details = layers[layer_type]
+                data = layers[layer_type]
+                details = data.get("details", {}) or {}
+                lengths = data.get("lengths", {}) or {}
 
-                # Layer type header
-                text_widget.append(f'<b style="color:#228B22;">{layer_type}</b>')
+                text_widget.append(
+                    f'<b style="color:#228B22;">{layer_type}</b>'
+                )
 
                 if not details:
-                    text_widget.append('<i style="margin-left:10px;">(no features)</i>')
+                    text_widget.append(
+                        '<i style="margin-left:10px;">(no features)</i>'
+                    )
                     continue
 
-                # List features inline but block style to control spacing
-                for fid, val in details.items():
-                    if layer_type == "DUCT":
-                        text_widget.append(
-                            f'<span style="display:block; margin-left:10px;">{fid}: {float(val):.2f} m</span>')
-                    else:
-                        text_widget.append(f'<span style="display:block; margin-left:10px;">{fid}: {int(val)}</span>')
+                # per-layer_type totals (per provider)
+                total_segment_length = 0.0
+                total_duct_length = 0.0
+                total_structure_length = 0.0
 
-            # Optional small separator
-            text_widget.append('<br>')
+                for name, val in details.items():
+
+                    if layer_type == "DUCT":
+                        try:
+                            length_m = float(lengths.get(name, val))
+                        except Exception:
+                            length_m = 0.0
+
+                        total_duct_length += length_m
+
+                        qcolor = DUCT_COLORS.get(str(name), QColor("#888888"))
+                        icon = duct_icon(qcolor)
+
+                        text_widget.append(
+                            f"{icon}{name} : <b>{length_m:.2f} m</b>"
+                        )
+
+                    elif layer_type == "SEGMENT":
+                        seg_type_id = None
+                        try:
+                            seg_type_id = int(name)
+                        except Exception:
+                            for tid, lbl in SEGMENT_TYPE_LABELS.items():
+                                if str(name).lower() == lbl.lower():
+                                    seg_type_id = tid
+                                    break
+
+                        if seg_type_id is not None:
+                            qcolor = SEGMENT_TYPE_COLORS.get(seg_type_id, QColor("#888888"))
+                            label = SEGMENT_TYPE_LABELS.get(seg_type_id, str(name))
+                        else:
+                            qcolor = QColor("#888888")
+                            label = str(name)
+
+                        icon = segment_text_icon(qcolor)
+
+                        try:
+                            count = int(val)
+                        except Exception:
+                            count = 0
+
+                        try:
+                            length_m = float(lengths.get(name, 0.0))
+                        except Exception:
+                            length_m = 0.0
+
+                        total_segment_length += length_m
+
+                        text_widget.append(
+                            f"{icon}{label} ({count}) : "
+                            f"<b>{length_m:.2f} m</b>"
+                        )
+
+                    elif layer_type == "STRUCTURE":
+                        try:
+                            count = int(val)
+                        except Exception:
+                            count = 0
+
+                        # accumulate structure count so we can show a total
+                        total_structure_length += count
+
+                        fid = STRUCTURE_NAME_TO_FID.get(str(name))
+                        qcolor = STRUCTURE_COLORS.get(fid, QColor("#888888"))
+                        icon = structure_text_icon(str(name), qcolor)
+
+                        text_widget.append(
+                            f"{icon}{name}: {count}"
+                        )
+
+                # end for details.items()
+
+                # append per-layer_type totals once (per provider / layer_type)
+                if layer_type == "SEGMENT" and total_segment_length > 0.0:
+                    icon_total = segment_text_icon(QColor("black"))
+                    text_widget.append(
+                        f" == "
+                        f"<b>{total_segment_length:.2f} m</b>"
+                    )
+
+                if layer_type == "DUCT" and total_duct_length > 0.0:
+                    icon_total = duct_icon(QColor("black"))
+                    text_widget.append(
+                        f" == "
+                        f"<b>{total_duct_length:.2f} m</b>"
+                    )
+
+                # show total structures as a count (if any)
+                if layer_type == "STRUCTURE" and total_structure_length > 0:
+                    icon_total = structure_text_icon("TOTAAL", QColor("green"))
+                    text_widget.append(
+                        f" ==  "
+                        f"<b>{int(total_structure_length)}</b>"
+                    )
+            text_widget.append("<br>")
 
     def _checked_provider_names(self) -> list:
-        """Return list of provider names checked in the UI, robust to widget type."""
         combo = getattr(self, 'mComboBox', None)
         if combo is None:
             return []
@@ -868,9 +1028,7 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 names.append(str(text))
         return names
 
-    # python
     def load_selected_layers(self):
-        # (existing provider selection and uri setup code unchanged)
         checked_items = self.mComboBox.checkedItems()
         if not checked_items:
             QtWidgets.QMessageBox.information(self, "Load layers", "No providers selected.")
@@ -917,7 +1075,6 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         QtWidgets.QMessageBox.information(self, "Load WFS", "Finished loading selected layers.")
 
-# python
 class PolygonSelectTool(QgsMapTool):
 
     def __init__(
@@ -928,7 +1085,8 @@ class PolygonSelectTool(QgsMapTool):
             structure_layer_id=None,
             on_found=None,
             txt_unifiber=None,
-            btn_select=None
+            btn_select=None,
+            only_synergie=False
 
     ):
         super().__init__(canvas)
@@ -939,12 +1097,12 @@ class PolygonSelectTool(QgsMapTool):
         self.structure_layer_id = structure_layer_id
         self.btn_select = btn_select  # <-- store button reference
         self.on_found = on_found
-        self.txtUnifiber = txt_unifiber
+        self.txtUnifiber = txt_unifiber,
+        self.only_synergie = bool(only_synergie)  # NEW FLAG
 
-        # Use the text widget passed by the dock; do NOT try to find UI children on the tool
+
         self.txtUnifiber: Optional[QTextBrowser] = txt_unifiber
         if self.txtUnifiber is None:
-            # don't try to create or reparent the widget here; dock owns UI
             print(">>> INFO: PolygonSelectTool: no txtUnifiber reference provided")
         else:
             try:
@@ -952,7 +1110,6 @@ class PolygonSelectTool(QgsMapTool):
             except Exception:
                 pass
 
-        # drawing state
         self.drawing = False
         self.points: List[QgsPointXY] = []
 
@@ -1029,24 +1186,49 @@ class PolygonSelectTool(QgsMapTool):
             except Exception:
                 pass
 
+
+    def _feature_key(self, feat, preferred_field: Optional[str] = None) -> str:
+        try:
+            fields = feat.fields().names()
+        except Exception:
+            fields = []
+
+        if preferred_field:
+            try:
+                if preferred_field in fields and feat[preferred_field] is not None:
+                    return str(feat[preferred_field])
+            except Exception:
+                pass
+
+        # Common field candidates
+        for candidate in ("fid", "id", "feature_id"):
+            try:
+                if candidate in fields and feat[candidate] is not None:
+                    return str(feat[candidate])
+            except Exception:
+                continue
+
+        # Fallback to QgsFeature.id()
+        try:
+            return str(feat.id())
+        except Exception:
+            return ""
+
+
+
     def finish_polygon(self):
-        print(">>> finish_polygon CALLED")
         QgsMessageLog.logMessage("finish_polygon CALLED", "netscan_sabine", Qgis.Info)
+
         segment_layer = self._layer_from_id(self.segment_layer_id)
         duct_layer = self._layer_from_id(self.duct_layer_id)
         structure_layer = self._layer_from_id(self.structure_layer_id)
-        #
+
         SEGMENT_TYPE_MAP = {
             1: "Open sleuf",
             2: "Handboring",
             3: "Gestuurde boring",
         }
         STRUCTURE_TYPE_MAP = {
-            # 11202: "Grube",
-            # 11203: "AZK (Neu)",
-            # 11204: "Kabelschacht (Neu)",
-            # 11205: "AZK (Bestand)",
-            # 11206: "Kabelschacht (Bestand)",
             11209: "POC",
             11210: "EK478",
             11211: "Has-Koppeling",
@@ -1071,7 +1253,6 @@ class PolygonSelectTool(QgsMapTool):
         }
 
         if len(self.points) < 3:
-            print(">>> Not enough points to form polygon")
             self.reset()
             return
 
@@ -1084,27 +1265,128 @@ class PolygonSelectTool(QgsMapTool):
 
         summary: dict[str, dict] = {}
 
-        # Collect candidate layers
-        candidate_layers = []
+        # -------------------------------------------------
+        # Build allowed segment ID set (SYNERGIE WYRE) with spatial filter
+        # -------------------------------------------------
+        allowed_segment_ids = set()
+        if self.only_synergie and isinstance(segment_layer, QgsVectorLayer):
+            seg_crs = segment_layer.crs()
+            seg_poly = QgsGeometry(poly)
+            try:
+                if map_crs != seg_crs:
+                    transform = QgsCoordinateTransform(map_crs, seg_crs, QgsProject.instance())
+                    seg_poly.transform(transform)
+            except Exception as e:
+                QgsMessageLog.logMessage(f"Segment CRS transform failed: {e}", "netscan_sabine", Qgis.Warning)
 
+            seg_fields = segment_layer.fields().names()
+            request = QgsFeatureRequest().setFilterRect(seg_poly.boundingBox())
+            for seg in segment_layer.getFeatures(request):
+                try:
+                    geom = seg.geometry()
+                    if not geom or not geom.intersects(seg_poly):
+                        continue
+                    if "c_synergie" not in seg_fields:
+                        continue
+                    raw_val = seg["c_synergie"]
+                    if raw_val is None:
+                        continue
+                    if str(raw_val).strip().upper() != "SYNERGIE WYRE":
+                        continue
+
+                    if "fid" in seg_fields:
+                        fid_val = seg["fid"]
+                    else:
+                        fid_val = seg.id()
+                    allowed_segment_ids.add(str(fid_val))
+                except Exception:
+                    continue
+
+        # -------------------------------------------------
+        # Highlight segments intersecting polygon
+        # -------------------------------------------------
+        if isinstance(segment_layer, QgsVectorLayer):
+            seg_crs = segment_layer.crs()
+            seg_poly = QgsGeometry(poly)
+            try:
+                if map_crs != seg_crs:
+                    transform = QgsCoordinateTransform(map_crs, seg_crs, QgsProject.instance())
+                    seg_poly.transform(transform)
+            except Exception as e:
+                QgsMessageLog.logMessage(f"Segment CRS transform failed: {e}", "netscan_sabine", Qgis.Warning)
+
+            seg_fields = segment_layer.fields().names()
+            request = QgsFeatureRequest().setFilterRect(seg_poly.boundingBox())
+            for seg in segment_layer.getFeatures(request):
+                try:
+                    geom = seg.geometry()
+                    if not geom or not geom.intersects(seg_poly):
+                        continue
+
+                    seg_fid = str(seg["fid"] if "fid" in seg_fields else seg.id())
+                    if self.only_synergie and seg_fid not in allowed_segment_ids:
+                        continue
+
+                    highlight = QgsHighlight(self.canvas, geom, segment_layer)
+                    highlight.setColor(QColor(0, 255, 0, 100))
+                    highlight.setWidth(2)
+                    highlight.show()
+                    self.highlights.append(highlight)
+                except Exception:
+                    continue
+
+        # -------------------------------------------------
+        # Highlight ducts intersecting polygon
+        # -------------------------------------------------
+        if isinstance(duct_layer, QgsVectorLayer):
+            duct_crs = duct_layer.crs()
+            duct_poly = QgsGeometry(poly)
+            try:
+                if map_crs != duct_crs:
+                    transform = QgsCoordinateTransform(map_crs, duct_crs, QgsProject.instance())
+                    duct_poly.transform(transform)
+            except Exception as e:
+                QgsMessageLog.logMessage(f"Duct CRS transform failed: {e}", "netscan_sabine", Qgis.Warning)
+
+            duct_fields = duct_layer.fields().names()
+            request = QgsFeatureRequest().setFilterRect(duct_poly.boundingBox())
+            for duct in duct_layer.getFeatures(request):
+                try:
+                    geom = duct.geometry()
+                    if not geom or not geom.intersects(duct_poly):
+                        continue
+
+                    parent_raw = duct["fid_parent"] if "fid_parent" in duct_fields else None
+                    parent_id = None if parent_raw is None else str(parent_raw)
+                    if self.only_synergie and parent_id not in allowed_segment_ids:
+                        continue
+
+                    highlight = QgsHighlight(self.canvas, geom, duct_layer)
+                    highlight.setColor(QColor(255, 0, 0, 100))
+                    highlight.setWidth(2)
+                    highlight.show()
+                    self.highlights.append(highlight)
+                except Exception:
+                    continue
+
+        # -------------------------------------------------
+        # Collect candidate layers (unchanged logic)
+        # -------------------------------------------------
+        candidate_layers: list[QgsVectorLayer] = []
         explicit_layers = [segment_layer, duct_layer, structure_layer]
         for el in explicit_layers:
             if isinstance(el, QgsVectorLayer):
                 candidate_layers.append(el)
 
         ALLOWED_LAYER_KEYWORDS = ("unifiber", "wyre", "fiberklaar", "proximus")
-
         for lyr in QgsProject.instance().mapLayers().values():
             if not isinstance(lyr, QgsVectorLayer) or not lyr.isValid():
                 continue
-
             lname = lyr.name().lower().strip()
             if not any(keyword in lname for keyword in ALLOWED_LAYER_KEYWORDS):
                 continue
-
             if lyr not in candidate_layers:
                 candidate_layers.append(lyr)
-
             QgsMessageLog.logMessage(
                 f"Accepted layer: {lyr.name()}",
                 "netscan_sabine",
@@ -1112,25 +1394,35 @@ class PolygonSelectTool(QgsMapTool):
             )
 
         if not candidate_layers:
-            print(">>> No candidate layers found")
             if self.on_found:
                 self.on_found(summary)
             self.reset()
             return
 
-        # Process layers
+        QgsMessageLog.logMessage(
+            "candidate_layers: " + ", ".join(
+                f"{_layer_display_name(l) or '<no-name>'} (id={getattr(l, 'id', lambda: None)()})"
+                for l in candidate_layers
+            ),
+            "netscan_sabine",
+            Qgis.Info
+        )
+
+        # -------------------------------------------------
+        # Process candidate layers (same logic, minor caching)
+        # -------------------------------------------------
         for layer in candidate_layers:
             if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
                 continue
 
-            provider, layer_type = getattr(self, 'classify_layer', lambda l: (None, None))(layer)
+            # classify\_layer belongs to dock, not tool; keep fallback
+            provider, layer_type = getattr(self, "classify_layer", lambda l: (None, None))(layer)
 
-            # --- FALLBACK detection based on layer name ---
             if provider is None:
-                provider = layer.name().split()[0]  # e.g., 'Wyre', 'Fiberklaar', etc.
+                provider = layer.name().split()[0]
             if layer_type is None:
                 lname = layer.name().lower()
-                if lname.startswith("UNKNOWN"):
+                if lname.startswith("unknown"):
                     continue
                 elif "duct" in lname:
                     layer_type = "DUCT"
@@ -1139,13 +1431,12 @@ class PolygonSelectTool(QgsMapTool):
                 elif "segment" in lname:
                     layer_type = "SEGMENT"
 
-
             key = f"{provider}:{layer_type}"
             if key not in summary:
                 summary[key] = {"provider": provider, "layer_type": layer_type, "details": {}}
             details = summary[key]["details"]
 
-            # Transform polygon to layer CRS if needed
+            # Transform polygon once to layer CRS
             check_poly = QgsGeometry(poly)
             try:
                 if map_crs != layer.crs():
@@ -1155,7 +1446,8 @@ class PolygonSelectTool(QgsMapTool):
                 QgsMessageLog.logMessage(f"{layer.name()}: CRS transform failed: {e}", "netscan_sabine", Qgis.Warning)
                 continue
 
-            # Fetch features intersecting polygon
+            layer_fields = layer.fields().names()
+
             try:
                 request = QgsFeatureRequest().setFilterRect(check_poly.boundingBox())
                 features = list(layer.getFeatures(request))
@@ -1171,15 +1463,19 @@ class PolygonSelectTool(QgsMapTool):
                         continue
                 except Exception:
                     continue
-                # -----------------------
-                # HIGHLIGHT FEATURE
-                # -----------------------
+
+                # Highlight by type (same as before)
                 if layer_type == "SEGMENT":
-                    # Red, dashed crossings are already styled → thicker highlight
                     is_crossing = (
-                            "id_segment_type" in f.fields().names()
+                            "id_segment_type" in layer_fields
                             and f["id_segment_type"] == 3
                     )
+                    try:
+                        this_fid = str(f["fid"] if "fid" in layer_fields else f.id())
+                    except Exception:
+                        this_fid = str(f.id())
+                    if self.only_synergie and this_fid not in allowed_segment_ids:
+                        continue
                     self.highlight_feature(
                         layer,
                         f,
@@ -1188,6 +1484,10 @@ class PolygonSelectTool(QgsMapTool):
                     )
 
                 elif layer_type == "DUCT":
+                    parent_raw = f["fid_parent"] if "fid_parent" in layer_fields else None
+                    parent_id = None if parent_raw is None else str(parent_raw)
+                    if self.only_synergie and parent_id not in allowed_segment_ids:
+                        continue
                     self.highlight_feature(
                         layer,
                         f,
@@ -1196,24 +1496,32 @@ class PolygonSelectTool(QgsMapTool):
                     )
 
                 elif layer_type == "STRUCTURE":
+                    if self.only_synergie:
+                        continue
                     self.highlight_feature(
                         layer,
                         f,
                         QColor(0, 180, 0, 200),
                         width=4
                     )
+
                 # --- accumulate totals ---
                 if layer_type == "DUCT":
+                    if self.only_synergie:
+                        parent_id_raw = f["fid_parent"] if "fid_parent" in layer_fields else None
+                        if parent_id_raw is None or str(parent_id_raw) not in allowed_segment_ids:
+                            continue
+
                     name = next(
-                        (f[field] for field in ["name", "duct_name", "id", "fid"] if field in f.fields().names()),
-                        "UNKNOWN")
+                        (f[field] for field in ["name", "duct_name", "id", "fid"] if field in layer_fields),
+                        "UNKNOWN"
+                    )
                     details[name] = details.get(name, 0.0) + float(geom.length())
+
                 elif layer_type == "STRUCTURE":
-
-
                     field_name = None
                     for candidate in ("fid_type", "structure_type", "id"):
-                        if candidate in f.fields().names():
+                        if candidate in layer_fields:
                             field_name = candidate
                             break
 
@@ -1223,36 +1531,38 @@ class PolygonSelectTool(QgsMapTool):
                             raw_int = int(raw)
                         except Exception:
                             raw_int = None
-
                         label = STRUCTURE_TYPE_MAP.get(raw_int, f"UNKNOWN ({raw})")
                     else:
-                        if label.startswith("UNKNOWN"):
-                            continue
+                        label = "UNKNOWN"
+
+                    if label.startswith("UNKNOWN"):
+                        continue
                     details[label] = details.get(label, 0) + 1
 
                 elif layer_type == "SEGMENT":
-                    if "id_segment_type" in f.fields().names():
+                    if "id_segment_type" in layer_fields:
                         raw = f["id_segment_type"]
                         label = SEGMENT_TYPE_MAP.get(raw, f"UNKNOWN ({raw})")
                     else:
                         label = "UNKNOWN"
 
+                    # count features per type
                     details[label] = details.get(label, 0) + 1
+
+                    # additionally sum lengths per type
+                    seg_lengths = summary[key].setdefault("lengths", {})
+                    seg_lengths[label] = seg_lengths.get(label, 0.0) + float(geom.length())
 
                 else:
                     fid = str(f.id())
                     details[fid] = details.get(fid, 0) + 1
 
-        # Callback with results
         if self.on_found:
             try:
                 self.on_found(summary)
             except Exception:
                 QgsMessageLog.logMessage("on_found callback failed", "netscan_sabine", Qgis.Warning)
-        else:
-            print(">>> self.on_found is None")
 
-        # Restore previous map tool
         if getattr(self, "prev_map_tool", None):
             try:
                 self.canvas.setMapTool(self.prev_map_tool)
@@ -1260,11 +1570,9 @@ class PolygonSelectTool(QgsMapTool):
                 pass
 
         if self.btn_select:
-            self.btn_select.setStyleSheet("")  # reset color
+            self.btn_select.setStyleSheet("")
 
-        # Restore button color
         self.reset_drawing()
-
 
     def _layer_from_id(self, layer_id):
         if not layer_id:
