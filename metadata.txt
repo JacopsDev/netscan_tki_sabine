@@ -6,7 +6,7 @@
 name=Netscan_WFS
 qgisMinimumVersion=3.0
 description=A plugin to load in WFS-layers from TKI and allow measurements to be taken
-version=3.0
+version=4.0
 author=FTTH D&E
 email=toon.vandevoorde@jacops.be
 

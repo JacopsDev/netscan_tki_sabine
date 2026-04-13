@@ -1518,23 +1518,41 @@ class PolygonSelectTool(QgsMapTool):
 
                 elif layer_type == "STRUCTURE":
                     field_name = None
-                    for candidate in ("fid_type", "structure_type", "id"):
+                    for candidate in ("fid_type", "structure_type", "id", "type", "fidtype"):
                         if candidate in layer_fields:
                             field_name = candidate
                             break
 
+                    raw = None
                     if field_name:
-                        raw = f[field_name]
+                        try:
+                            raw = f[field_name]
+                        except Exception:
+                            raw = None
+
+                    # Try to interpret raw as an integer id, be lenient
+                    raw_int = None
+                    if raw is not None:
                         try:
                             raw_int = int(raw)
                         except Exception:
-                            raw_int = None
-                        label = STRUCTURE_TYPE_MAP.get(raw_int, f"UNKNOWN ({raw})")
-                    else:
-                        label = "UNKNOWN"
+                            try:
+                                raw_int = int(float(raw))
+                            except Exception:
+                                raw_int = None
 
-                    if label.startswith("UNKNOWN"):
-                        continue
+                    # Resolve a human label; fall back to a visible 'UNKNOWN (raw)' label
+                    label = None
+                    if raw_int is not None:
+                        label = STRUCTURE_TYPE_MAP.get(raw_int)
+                    if not label:
+                        # If raw was already a known label (string), keep it
+                        if isinstance(raw, str) and raw in STRUCTURE_TYPE_MAP.values():
+                            label = raw
+                        else:
+                            label = f"UNKNOWN ({raw})" if raw is not None else "UNKNOWN"
+
+                    # Always include structures in the summary (don't silently drop unknowns)
                     details[label] = details.get(label, 0) + 1
 
                 elif layer_type == "SEGMENT":
