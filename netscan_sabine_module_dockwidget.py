@@ -642,7 +642,7 @@ class netscan_sabineDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             "• UNIFIBER → UNIFIBER TKI\n"
             "• WYRE → TKI WYRE\n"
             "• Proximus and Fiberklaar are not available yet\n\n"
-            "If these auth configurations are missing or named differently, the WFS layers will not load."
+            "If these auth-configurations are missing or named differently, the WFS layers will not load."
         )
 
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
@@ -1496,8 +1496,6 @@ class PolygonSelectTool(QgsMapTool):
                     )
 
                 elif layer_type == "STRUCTURE":
-                    if self.only_synergie:
-                        continue
                     self.highlight_feature(
                         layer,
                         f,
@@ -1596,13 +1594,51 @@ class PolygonSelectTool(QgsMapTool):
             except Exception:
                 pass
 
+    # python
     def highlight_feature(self, layer: QgsVectorLayer, feature, color: QColor, width=2):
+        """
+        Create a persistent QgsHighlight for `feature` that is visible on the canvas.
+        - Accepts either a QgsFeature-like object or a QgsGeometry.
+        - Copies and transforms geometry to the canvas destination CRS.
+        - Guards empty geometries.
+        """
         try:
-            h = QgsHighlight(self.canvas, feature.geometry(), layer)
-            h.setColor(color)
-            h.setWidth(width)
-            h.show()
-            self.highlights.append(h)
+            geom = None
+            # Accept either a geometry or a feature
+            if isinstance(feature, QgsGeometry):
+                geom = QgsGeometry(feature)  # copy
+            else:
+                try:
+                    geom_src = feature.geometry()
+                    if geom_src is None:
+                        return
+                    geom = QgsGeometry(geom_src)  # copy so we don't mutate feature geometry
+                except Exception:
+                    return
+
+            if geom is None or geom.isEmpty():
+                return
+
+            # Transform geometry from layer CRS to canvas CRS if needed
+            try:
+                canvas_crs = self.canvas.mapSettings().destinationCrs()
+                layer_crs = layer.crs() if isinstance(layer, QgsVectorLayer) else None
+                if layer_crs is not None and canvas_crs is not None and layer_crs != canvas_crs:
+                    transform = QgsCoordinateTransform(layer_crs, canvas_crs, QgsProject.instance())
+                    geom.transform(transform)
+            except Exception:
+                # best-effort: continue with original geometry if transform fails
+                pass
+
+            # Create and keep the highlight so it stays visible
+            try:
+                h = QgsHighlight(self.canvas, geom, layer)
+                h.setColor(color)
+                h.setWidth(width)
+                h.show()
+                self.highlights.append(h)
+            except Exception:
+                pass
         except Exception:
             pass
 
